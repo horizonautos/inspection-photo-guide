@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inspector Photo Capture</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; text-align: center; }
+    button { padding: 10px 20px; font-size: 16px; margin: 8px; }
+    video, canvas { width: 100%; margin-top: 15px; border-radius: 8px; }
+    #status { margin-top: 20px; font-weight: bold; color: green; }
+    #controls { margin-top: 20px; }
+    #vehicle-form { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Step-by-Step Photo Guide (Offline Mode)</h2>
+
+  <div id="vehicle-form">
+    <label><strong>Enter Vehicle Folder Name (e.g., Rego or VIN):</strong></label><br>
+    <input type="text" id="vehicleId" placeholder="e.g., ABC123_20240506_001" required><br><br>
+  </div>
+
+  <p id="instruction">Please photograph: <strong>Bonnet</strong></p>
+
+  <video id="camera" autoplay playsinline></video><br>
+
+  <div id="controls">
+    <button onclick="takePhoto()">📷 Capture Photo</button>
+    <button onclick="markNotEquipped()">🚫 Not Equipped</button>
+    <button onclick="markNotAccessible()">❌ Not Accessible</button>
+  </div>
+
+  <canvas id="snapshot" style="display:none;"></canvas><br>
+
+  <div id="status"></div>
+
+  <script>
+    const parts = [
+      "VIN Plate", "Compliance Plate", "Odometer", "Engine Bay",
+      "Front Left 45°", "Front Right 45°", "Rear Left 45°", "Rear Right 45°",
+      "Left Side", "Right Side", "Front", "Rear",
+      "Bonnet", "Roof", "Boot", "Left Front Door", "Right Front Door",
+      "Left Rear Door", "Right Rear Door", "Left Fender", "Right Fender",
+      "Left Quarter Panel", "Right Quarter Panel", "Front Bumper", "Rear Bumper",
+      "A-Pillar Left", "A-Pillar Right", "B-Pillar Left", "B-Pillar Right",
+      "C-Pillar Left", "C-Pillar Right", "Front Crash Bar", "Rear Crash Bar",
+      "Left Headlight", "Right Headlight", "Left Taillight", "Right Taillight",
+      "Left Front Indicator", "Right Front Indicator",
+      "Left Rear Indicator", "Right Rear Indicator",
+      "1st Row Seat", "2nd Row Seat", "3rd Row Seat",
+      "Steering Wheel", "Pedals", "Center Console", "Dashboard",
+      "Vent Left", "Vent Center", "Vent Right", "Vent Rear",
+      "Tyre Front Left", "Tyre Front Right", "Tyre Rear Left", "Tyre Rear Right",
+      "Rim Front Left", "Rim Front Right", "Rim Rear Left", "Rim Rear Right",
+      "Brake Pads Front", "Brake Pads Rear", "Undercarriage Rust", "Undercarriage Scrape",
+      "Leak 1", "Leak 2", "Leak 3", "Leak 4", "Leak 5", "Leak 6", "Leak 7",
+      "Water Ingress 1", "Water Ingress 2", "Water Ingress 3", "Water Ingress 4", "Water Ingress 5",
+      "Spare Key", "Manual", "Jack", "Tool Kit", "Logbook", "Cargo Blind",
+      "Dashboard Warning Lights", "Test Drive View", "Gear RPM Panel"
+    ];
+
+    let currentStep = 0;
+    const instruction = document.getElementById("instruction");
+    const status = document.getElementById("status");
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("snapshot");
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => video.srcObject = stream)
+      .catch(err => alert("Camera access denied: " + err));
+
+    function getVehicleId() {
+      return document.getElementById("vehicleId").value.trim().replace(/\s+/g, "_");
+    }
+
+    function takePhoto() {
+      const vehicleId = getVehicleId();
+      if (!vehicleId) {
+        alert("Please enter vehicle folder name first.");
+        return;
+      }
+      canvas.style.display = "block";
+      const ctx = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob(blob => {
+        const filename = `${vehicleId}_${parts[currentStep].toLowerCase().replace(/\s+/g, '_')}.jpg`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        status.innerText = `Saved: ${filename}`;
+        nextStep();
+      }, 'image/jpeg');
+    }
+
+    function markNotEquipped() {
+      status.innerText = `Marked Not Equipped: ${parts[currentStep]}`;
+      nextStep();
+    }
+
+    function markNotAccessible() {
+      status.innerText = `Marked Not Accessible: ${parts[currentStep]}`;
+      nextStep();
+    }
+
+    function nextStep() {
+      currentStep++;
+      if (currentStep >= parts.length) {
+        instruction.innerHTML = "✅ All photos processed.";
+        document.getElementById("controls").style.display = "none";
+      } else {
+        instruction.innerHTML = `Please photograph: <strong>${parts[currentStep]}</strong>`;
+        canvas.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
