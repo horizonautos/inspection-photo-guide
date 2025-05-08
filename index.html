@@ -2,68 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Inspector Photo Capture</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspector Photo Capture v2 Full</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; text-align: center; }
-    button { padding: 10px 20px; font-size: 16px; margin: 8px; }
-    video, canvas { width: 100%; margin-top: 15px; border-radius: 8px; }
-    #status { margin-top: 20px; font-weight: bold; color: green; }
-    #controls { margin-top: 20px; }
-    #vehicle-form { margin-bottom: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    video, canvas { width: 100%; border-radius: 8px; margin-top: 10px; }
+    button { padding: 10px 20px; margin: 6px; font-size: 16px; }
+    #controls, #status, #preview { margin-top: 20px; }
+    .thumb { width: 80px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <h2>Step-by-Step Photo Guide (Offline Mode)</h2>
+  <h2>Inspector Step-by-Step Photo Tool</h2>
 
-  <div id="vehicle-form">
-    <label><strong>Enter Vehicle Folder Name (e.g., Rego or VIN):</strong></label><br>
-    <input type="text" id="vehicleId" placeholder="e.g., ABC123_20240506_001" required><br><br>
-  </div>
+  <label><strong>Enter Vehicle Plate Number:</strong></label><br>
+  <input type="text" id="vehicleId" placeholder="e.g., ABC123" required><br><br>
 
-  <p id="instruction">Please photograph: <strong>Bonnet</strong></p>
+  <label><strong>Enter Odometer (km):</strong></label><br>
+  <input type="text" id="odometerReading" placeholder="e.g., 123456" required><br><br>
 
-  <video id="camera" autoplay playsinline></video><br>
+  <p id="instruction"></p>
 
-  <div id="controls">
-    <button onclick="takePhoto()">📷 Capture Photo</button>
-    <button onclick="markNotEquipped()">🚫 Not Equipped</button>
-    <button onclick="markNotAccessible()">❌ Not Accessible</button>
-  </div>
+  <video id="camera" autoplay playsinline></video>
 
-  <canvas id="snapshot" style="display:none;"></canvas><br>
-
+  <div id="controls"></div>
+  <canvas id="snapshot" style="display:none;"></canvas>
   <div id="status"></div>
+  <div id="preview"></div>
+<div style="margin-top: 30px;">
+  <button onclick="generatePhotoRecord()">📁 Generate Photo Record JSON</button>
+</div>
 
-  <script>
-    const parts = [
-      "VIN Plate", "Compliance Plate", "Odometer", "Engine Bay",
-      "Front Left 45°", "Front Right 45°", "Rear Left 45°", "Rear Right 45°",
-      "Left Side", "Right Side", "Front", "Rear",
-      "Bonnet", "Roof", "Boot", "Left Front Door", "Right Front Door",
-      "Left Rear Door", "Right Rear Door", "Left Fender", "Right Fender",
-      "Left Quarter Panel", "Right Quarter Panel", "Front Bumper", "Rear Bumper",
-      "A-Pillar Left", "A-Pillar Right", "B-Pillar Left", "B-Pillar Right",
-      "C-Pillar Left", "C-Pillar Right", "Front Crash Bar", "Rear Crash Bar",
-      "Left Headlight", "Right Headlight", "Left Taillight", "Right Taillight",
-      "Left Front Indicator", "Right Front Indicator",
-      "Left Rear Indicator", "Right Rear Indicator",
-      "1st Row Seat", "2nd Row Seat", "3rd Row Seat",
-      "Steering Wheel", "Pedals", "Center Console", "Dashboard",
-      "Vent Left", "Vent Center", "Vent Right", "Vent Rear",
-      "Tyre Front Left", "Tyre Front Right", "Tyre Rear Left", "Tyre Rear Right",
-      "Rim Front Left", "Rim Front Right", "Rim Rear Left", "Rim Rear Right",
-      "Brake Pads Front", "Brake Pads Rear", "Undercarriage Rust", "Undercarriage Scrape",
-      "Leak 1", "Leak 2", "Leak 3", "Leak 4", "Leak 5", "Leak 6", "Leak 7",
-      "Water Ingress 1", "Water Ingress 2", "Water Ingress 3", "Water Ingress 4", "Water Ingress 5",
-      "Spare Key", "Manual", "Jack", "Tool Kit", "Logbook", "Cargo Blind",
-      "Dashboard Warning Lights", "Test Drive View", "Gear RPM Panel"
+<script>
+    const singleSteps = [
+      // Exterior (21 fixed)
+      "exterior_bonnet", "exterior_roof", "exterior_boot",
+      "exterior_front_bumper", "exterior_rear_bumper",
+      "exterior_left_front_door", "exterior_right_front_door",
+      "exterior_left_rear_door", "exterior_right_rear_door",
+      "exterior_left_fender", "exterior_right_fender",
+      "exterior_left_quarter_panel", "exterior_right_quarter_panel",
+      "exterior_apillar_left", "exterior_apillar_right",
+      "exterior_bpillar_left", "exterior_bpillar_right",
+      "exterior_cpillar_left", "exterior_cpillar_right",
+      "exterior_front_crash_bar", "exterior_rear_crash_bar",
+
+      // Wheels (8 fixed)
+      "pf_tyre", "pf_rim", "pr_tyre", "pr_rim", "df_tyre", "df_rim", "dr_tyre", "dr_rim",
+
+      // Odometer fixed (2)
+      "odometer", "transmission_km"
     ];
 
-    let currentStep = 0;
-    const instruction = document.getElementById("instruction");
-    const status = document.getElementById("status");
+    const multiSteps = [
+  "logbook", "interior", "attachments", "mechanical", "modifications"
+];
+
+    let currentStepIndex = 0;
+    let inMultiMode = false;
+    let multiStepName = "";
+    let multiCount = 1;
+
     const video = document.getElementById("camera");
     const canvas = document.getElementById("snapshot");
+    const status = document.getElementById("status");
+    const instruction = document.getElementById("instruction");
+    const controls = document.getElementById("controls");
+    const preview = document.getElementById("preview");
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => video.srcObject = stream)
@@ -73,52 +78,130 @@
       return document.getElementById("vehicleId").value.trim().replace(/\s+/g, "_");
     }
 
-    function takePhoto() {
-      const vehicleId = getVehicleId();
-      if (!vehicleId) {
-        alert("Please enter vehicle folder name first.");
+    function updateInstruction() {
+      preview.innerHTML = "";
+      if (!inMultiMode) {
+        if (currentStepIndex >= singleSteps.length) {
+          enterNextMulti();
+          return;
+        }
+        const name = singleSteps[currentStepIndex];
+        instruction.innerHTML = `Step ${currentStepIndex + 1}: Take photo of <strong>${name.replace(/_/g, ' ')}</strong>`;
+        controls.innerHTML = `
+          <button onclick="takeSinglePhoto()">📷 Capture</button>
+          <button onclick="markNotEquipped()">🚫 Not Equipped</button>
+          <button onclick="markNotAccessible()">❌ Not Accessible</button>
+        `;
+      } else {
+        instruction.innerHTML = `Take photos of <strong>${multiStepName}</strong> - current: ${multiCount}`;
+        controls.innerHTML = `
+          <button onclick="takeMultiPhoto()">📷 Take Photo</button>
+          <button onclick="endMultiMode()">✅ Finish ${multiStepName}</button>
+        `;
+      }
+    }
+
+    function takeSinglePhoto() {
+      const id = getVehicleId();
+      if (!id) return alert("Enter vehicle plate number first.");
+      const name = singleSteps[currentStepIndex];
+      captureAndSave(`${id}_${name}.jpg`);
+      currentStepIndex++;
+      updateInstruction();
+
+// ✅ Generate photo list JSON file
+function generatePhotoRecord() {
+  const id = getVehicleId();
+  if (!id) return alert("Enter vehicle plate number first.");
+
+  const thumbs = document.querySelectorAll('.thumb');
+  const photoList = Array.from(thumbs).map(img => img.title);
+
+  const odo = document.getElementById("odometerReading").value.trim();
+  const record = {
+    plate: id,
+    odometer_km: odo,
+    total_photos: photoList.length,
+    photos: photoList,
+    timestamp: new Date().toISOString()
+  };
+
+  const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${id}_photo_record.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  status.innerText = `✅ JSON Record Saved: ${id}_photo_record.json`;
+}
+    }
+
+    function markNotEquipped() {
+      status.innerText = `🚫 Marked Not Equipped: ${singleSteps[currentStepIndex]}`;
+      currentStepIndex++;
+      updateInstruction();
+    }
+
+    function markNotAccessible() {
+      status.innerText = `❌ Marked Not Accessible: ${singleSteps[currentStepIndex]}`;
+      currentStepIndex++;
+      updateInstruction();
+    }
+
+    function enterNextMulti() {
+      if (multiSteps.length === 0) {
+        instruction.innerHTML = "✅ All steps completed.";
+        controls.innerHTML = "";
         return;
       }
+      multiStepName = multiSteps.shift();
+      inMultiMode = true;
+      multiCount = 1;
+      updateInstruction();
+    }
+
+    function takeMultiPhoto() {
+      const id = getVehicleId();
+      if (!id) return alert("Enter vehicle plate number first.");
+      const filename = `${id}_${multiStepName}${multiCount}.jpg`;
+      captureAndSave(filename);
+      multiCount++;
+      updateInstruction();
+    }
+
+    function endMultiMode() {
+      inMultiMode = false;
+      updateInstruction();
+    }
+
+    function captureAndSave(filename) {
       canvas.style.display = "block";
       const ctx = canvas.getContext("2d");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0);
       canvas.toBlob(blob => {
-        const filename = `${vehicleId}_${parts[currentStep].toLowerCase().replace(/\s+/g, '_')}.jpg`;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
-        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        status.innerText = `Saved: ${filename}`;
-        nextStep();
+        status.innerText = `✅ Saved: ${filename}`;
+        showThumbnail(blob, filename);
       }, 'image/jpeg');
     }
 
-    function markNotEquipped() {
-      status.innerText = `Marked Not Equipped: ${parts[currentStep]}`;
-      nextStep();
+    function showThumbnail(blob, name) {
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(blob);
+      img.className = "thumb";
+      img.title = name;
+      preview.appendChild(img);
     }
 
-    function markNotAccessible() {
-      status.innerText = `Marked Not Accessible: ${parts[currentStep]}`;
-      nextStep();
-    }
-
-    function nextStep() {
-      currentStep++;
-      if (currentStep >= parts.length) {
-        instruction.innerHTML = "✅ All photos processed.";
-        document.getElementById("controls").style.display = "none";
-      } else {
-        instruction.innerHTML = `Please photograph: <strong>${parts[currentStep]}</strong>`;
-        canvas.style.display = "none";
-      }
-    }
+    updateInstruction();
   </script>
 </body>
 </html>
+
