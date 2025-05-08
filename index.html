@@ -109,7 +109,7 @@
       currentStepIndex++;
       updateInstruction();
 
-// ✅ Generate photo list JSON file
+// ✅ Generate photo list JSON file (moved outside)
 function generatePhotoRecord() {
   const id = getVehicleId();
   if (!id) return alert("Enter vehicle plate number first.");
@@ -134,6 +134,8 @@ function generatePhotoRecord() {
   URL.revokeObjectURL(a.href);
   status.innerText = `✅ JSON Record Saved: ${id}_photo_record.json`;
 }
+
+
     }
 
     function markNotEquipped() {
@@ -204,4 +206,5 @@ function generatePhotoRecord() {
   </script>
 </body>
 </html>
+
 
