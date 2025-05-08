@@ -24,17 +24,16 @@
   <p id="instruction"></p>
 
   <video id="camera" autoplay playsinline></video>
-
   <div id="controls"></div>
   <canvas id="snapshot" style="display:none;"></canvas>
   <div id="status"></div>
   <div id="preview"></div>
-<div style="margin-top: 30px;">
-  <button onclick="generatePhotoRecord()">📁 Generate Photo Record JSON</button>
-</div>
+  <div style="margin-top: 30px;">
+    <button onclick="generatePhotoRecord()">📁 Generate Photo Record JSON</button>
+  </div>
+
 <script>
   const singleSteps = [
-    // Exterior (21 fixed)
     "exterior_bonnet", "exterior_roof", "exterior_boot",
     "exterior_front_bumper", "exterior_rear_bumper",
     "exterior_left_front_door", "exterior_right_front_door",
@@ -45,17 +44,11 @@
     "exterior_bpillar_left", "exterior_bpillar_right",
     "exterior_cpillar_left", "exterior_cpillar_right",
     "exterior_front_crash_bar", "exterior_rear_crash_bar",
-
-    // Wheels (8 fixed)
     "pf_tyre", "pf_rim", "pr_tyre", "pr_rim", "df_tyre", "df_rim", "dr_tyre", "dr_rim",
-
-    // Odometer fixed (2)
     "odometer", "transmission_km"
   ];
 
-  const multiSteps = [
-    "logbook", "interior", "attachments", "mechanical", "modifications"
-  ];
+  const multiSteps = ["logbook", "interior", "attachments", "mechanical", "modifications"];
 
   let currentStepIndex = 0;
   let inMultiMode = false;
@@ -202,7 +195,5 @@
 
   window.onload = updateInstruction;
 </script>
-
-
 </body>
 </html>
