@@ -102,21 +102,45 @@
     }
 
     function takeSinglePhoto() {
-      const id = getVehicleId();
-      if (!id) return alert("Enter vehicle plate number first.");
-      const name = singleSteps[currentStepIndex];
-      captureAndSave(`${id}_${name}.jpg`);
-      currentStepIndex++;
-      updateInstruction();
+  const id = getVehicleId();
+  if (!id) return alert("Enter vehicle plate number first.");
+  const name = singleSteps[currentStepIndex];
+  captureAndSave(`${id}_${name}.jpg`);
+  currentStepIndex++;
+  updateInstruction();
+}
+}
 
+
+}
+
+// ✅ Generate photo list JSON file
+function generatePhotoRecord() {
+  const id = getVehicleId();
+  if (!id) return alert("Enter vehicle plate number first.");
+
+  const thumbs = document.querySelectorAll('.thumb');
+  const photoList = Array.from(thumbs).map(img => img.title);
+
+  const odo = document.getElementById("odometerReading").value.trim();
+  const record = {
+    plate: id,
+    odometer_km: odo,
+    total_photos: photoList.length,
+    photos: photoList,
+    timestamp: new Date().toISOString()
+  };
 
   const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `${id}_photo_record.json`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
   status.innerText = `✅ JSON Record Saved: ${id}_photo_record.json`;
+}
 }
 
 
@@ -187,25 +211,6 @@
     }
 
     updateInstruction();
-  // ✅ Generate photo list JSON file (moved outside)
-function generatePhotoRecord() {
-  const id = getVehicleId();
-  if (!id) return alert("Enter vehicle plate number first.");
-
-  const thumbs = document.querySelectorAll('.thumb');
-  const photoList = Array.from(thumbs).map(img => img.title);
-
-  const odo = document.getElementById("odometerReading").value.trim();
-  const record = {
-    plate: id,
-    odometer_km: odo,
-    total_photos: photoList.length,
-    photos: photoList,
-    timestamp: new Date().toISOString()
-  };
-
   </script>
 </body>
 </html>
-
-
