@@ -137,8 +137,8 @@ function generatePhotoRecord() {
   a.download = `${id}_photo_record.json`;
   document.body.appendChild(a);
   a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 100);
   document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
   status.innerText = `✅ JSON Record Saved: ${id}_photo_record.json`;
 }
 }
